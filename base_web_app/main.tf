@@ -11,9 +11,11 @@ provider "aws" {
 ##################################################################################
 # DATA
 ##################################################################################
+# AWS System Manager Parameter: secure storage for config data, secret
 
 data "aws_ssm_parameter" "amzn2_linux" {
   name = "/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2"
+  # latest amazon linux 2 ami(amazon machine image)
 }
 
 ##################################################################################
@@ -21,17 +23,20 @@ data "aws_ssm_parameter" "amzn2_linux" {
 ##################################################################################
 
 # NETWORKING #
+# Create VPC
 resource "aws_vpc" "app" {
   cidr_block           = "10.0.0.0/16"
   enable_dns_hostnames = true
 
 }
 
+# Create IGW and link to VPC
 resource "aws_internet_gateway" "app" {
   vpc_id = aws_vpc.app.id
 
 }
 
+# Create public subnet in VPC
 resource "aws_subnet" "public_subnet1" {
   cidr_block              = "10.0.0.0/24"
   vpc_id                  = aws_vpc.app.id
@@ -39,6 +44,7 @@ resource "aws_subnet" "public_subnet1" {
 }
 
 # ROUTING #
+# Create route table and route internet gateway to public internet
 resource "aws_route_table" "app" {
   vpc_id = aws_vpc.app.id
 
@@ -48,18 +54,19 @@ resource "aws_route_table" "app" {
   }
 }
 
+# Link public subnet with route table
 resource "aws_route_table_association" "app_subnet1" {
   subnet_id      = aws_subnet.public_subnet1.id
   route_table_id = aws_route_table.app.id
 }
 
 # SECURITY GROUPS #
-# Nginx security group 
+# Nginx security group linked to VPC
 resource "aws_security_group" "nginx_sg" {
   name   = "nginx_sg"
   vpc_id = aws_vpc.app.id
 
-  # HTTP access from anywhere
+  # HTTP access from anywhere for port 80 to 80 of ec2
   ingress {
     from_port   = 80
     to_port     = 80
@@ -67,7 +74,7 @@ resource "aws_security_group" "nginx_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # outbound internet access
+  # outbound internet access: allow outbound to anywhere
   egress {
     from_port   = 0
     to_port     = 0
@@ -77,6 +84,7 @@ resource "aws_security_group" "nginx_sg" {
 }
 
 # INSTANCES #
+# Create EC2
 resource "aws_instance" "nginx1" {
   ami                    = nonsensitive(data.aws_ssm_parameter.amzn2_linux.value)
   instance_type          = "t3.micro"
@@ -90,6 +98,8 @@ sudo service nginx start
 sudo rm /usr/share/nginx/html/index.html
 echo '<html><head><title>Taco Team Server</title></head><body style=\"background-color:#1F778D\"><p style=\"text-align: center;\"><span style=\"color:#FFFFFF;\"><span style=\"font-size:28px;\">You did it! Have a &#127790;</span></span></p></body></html>' | sudo tee /usr/share/nginx/html/index.html
 EOF
+# script run at first time instance up
+# define script by herodic syntax with <<EOF EOF
 
 }
 
