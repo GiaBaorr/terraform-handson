@@ -1,3 +1,9 @@
+# AWS ELB DATA SOURCE
+data "aws_elb_service_account" "root" {}
+# data source to get the AWS ELB service account ARN 
+# so that we can set the S3 bucket policy to allow the ALB to write logs to the S3 bucket
+
+
 # LOAD BALANCER #
 resource "aws_lb" "nginx" {
   name               = "globo-web-alb"
@@ -5,8 +11,16 @@ resource "aws_lb" "nginx" {
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb_sg.id]                               # security group for ALB
   subnets            = [aws_subnet.public_subnet1.id, aws_subnet.public_subnet2.id] # public subnets
+  depends_on         = [aws_s3_bucket_policy.web_bucket]                            # ensure S3 bucket policy is created before ALB
 
   enable_deletion_protection = false # allow deletion of ALB after terraform destroy
+
+  # enable access logs for the ALB
+  access_logs {
+    bucket  = aws_s3_bucket.web_bucket.bucket
+    enabled = true
+    prefix  = "alb-logs" # prefix for the logs in the S3 bucket
+  }
 
   tags = local.common_tags
 }
@@ -39,11 +53,11 @@ resource "aws_lb_listener" "nginx" {
 resource "aws_lb_target_group_attachment" "nginx1" {
   target_group_arn = aws_lb_target_group.nginx.arn
   target_id        = aws_instance.nginx1.id # instance ID of the nginx server
-  port             = 80                    # port on which the nginx server is listening
+  port             = 80                     # port on which the nginx server is listening
 }
 
 resource "aws_lb_target_group_attachment" "nginx2" {
   target_group_arn = aws_lb_target_group.nginx.arn
   target_id        = aws_instance.nginx2.id # instance ID of the nginx server
-  port             = 80                    # port on which the nginx server is listening
+  port             = 80                     # port on which the nginx server is listening
 }
