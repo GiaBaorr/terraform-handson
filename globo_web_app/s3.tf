@@ -48,18 +48,13 @@ resource "aws_s3_bucket_policy" "web_bucket" {
 
 
 # aws_s3_object
-resource "aws_s3_object" "name" {
-  bucket = aws_s3_bucket.web_bucket.id
-  key    = "/website/index.html"
-  source = "./website/index.html"
+resource "aws_s3_object" "website_content" {
 
-  tags = local.common_tags
-}
+  for_each = local.website_content
 
-resource "aws_s3_object" "graphic" {
   bucket = aws_s3_bucket.web_bucket.id
-  key    = "/website/Globo_logo_Vert.png"
-  source = "./website/Globo_logo_Vert.png"
+  key    = each.value
+  source = "${path.root}/${each.value}"
 
   tags = local.common_tags
 }

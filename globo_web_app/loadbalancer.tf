@@ -50,14 +50,9 @@ resource "aws_lb_listener" "nginx" {
 }
 
 # TARGET GROUP ATTACHMENT #
-resource "aws_lb_target_group_attachment" "nginx1" {
+resource "aws_lb_target_group_attachment" "nginx" {
+  count            = var.instances_count
   target_group_arn = aws_lb_target_group.nginx.arn
-  target_id        = aws_instance.nginx1.id # instance ID of the nginx server
-  port             = 80                     # port on which the nginx server is listening
-}
-
-resource "aws_lb_target_group_attachment" "nginx2" {
-  target_group_arn = aws_lb_target_group.nginx.arn
-  target_id        = aws_instance.nginx2.id # instance ID of the nginx server
-  port             = 80                     # port on which the nginx server is listening
+  target_id        = aws_instance.nginx[count.index].id # instance ID of the nginx server
+  port             = 80                                   # port on which the nginx server is listening
 }
