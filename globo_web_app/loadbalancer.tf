@@ -10,7 +10,7 @@ resource "aws_lb" "nginx" {
   internal           = false # public facing ALB
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb_sg.id]                               # security group for ALB
-  subnets            = [aws_subnet.public_subnet1.id, aws_subnet.public_subnet2.id] # public subnets
+  subnets            = aws_subnet.public_subnets[*].id # public subnets
   depends_on         = [aws_s3_bucket_policy.web_bucket]                            # ensure S3 bucket policy is created before ALB
 
   enable_deletion_protection = false # allow deletion of ALB after terraform destroy
@@ -54,5 +54,5 @@ resource "aws_lb_target_group_attachment" "nginx" {
   count            = var.instances_count
   target_group_arn = aws_lb_target_group.nginx.arn
   target_id        = aws_instance.nginx[count.index].id # instance ID of the nginx server
-  port             = 80                                   # port on which the nginx server is listening
+  port             = 80                                 # port on which the nginx server is listening
 }

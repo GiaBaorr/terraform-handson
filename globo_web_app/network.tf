@@ -17,25 +17,32 @@ resource "aws_vpc" "app" {
   cidr_block           = var.vpc_cidr_block
   enable_dns_hostnames = var.enable_dns_hostnames
 
-  tags = local.common_tags
+  tags = merge(local.common_tags, {
+    Name = "${local.naming_prefix}-vpc"
+  })
 }
 
 # Create IGW and link to VPC
 resource "aws_internet_gateway" "app" {
   vpc_id = aws_vpc.app.id
 
-  tags = local.common_tags
+  tags = merge(local.common_tags, {
+    Name = "${local.naming_prefix}-igw"
+  })
 }
 
 # Create public subnets in VPC
 resource "aws_subnet" "public_subnets" {
-  count                   = var.vpc_public_subnet_count
-  cidr_block              = var.vpc_public_subnets_cidr_block[count.index]
+  count = var.vpc_public_subnet_count
+  #cidr_block              = var.vpc_public_subnets_cidr_block[count.index]
+  cidr_block              = cidrsubnet(var.vpc_cidr_block, 8, count.index)
   vpc_id                  = aws_vpc.app.id
   map_public_ip_on_launch = var.map_public_ip_on_launch
   availability_zone       = data.aws_availability_zones.available.names[count.index]
 
-  tags = local.common_tags
+  tags = merge(local.common_tags, {
+    Name = "${local.naming_prefix}-public-subnet-${count.index}"
+  })
 }
 
 # ROUTING #
@@ -47,6 +54,10 @@ resource "aws_route_table" "app" {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.app.id
   }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.naming_prefix}-rtb"
+  })
 }
 
 # Link public subnets with route table
@@ -59,7 +70,7 @@ resource "aws_route_table_association" "app_subnets" {
 # SECURITY GROUPS #
 # Nginx security group linked to VPC
 resource "aws_security_group" "nginx_sg" {
-  name   = "nginx_sg"
+  name   = "${local.naming_prefix}-nginx-sg"
   vpc_id = aws_vpc.app.id
 
   # HTTP access from anywhere for port 80 to 80 of ec2
@@ -80,7 +91,7 @@ resource "aws_security_group" "nginx_sg" {
 }
 
 resource "aws_security_group" "alb_sg" {
-  name   = "nginx_alb_sg"
+  name   = "${local.naming_prefix}-alb-sg"
   vpc_id = aws_vpc.app.id
 
   # HTTP access from anywhere for port 80 to 80 of ec2
@@ -98,4 +109,6 @@ resource "aws_security_group" "alb_sg" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+  tags = local.common_tags
 }

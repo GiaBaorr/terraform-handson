@@ -65,3 +65,15 @@ variable "billing_code" {
   type        = string
   description = "Billing code for resource tagging"
 }
+
+variable "naming_prefix" {
+  type        = string
+  description = "Prefix for resource names"
+  default     = "globo-web-app"
+}
+
+variable "environment" {
+  type        = string
+  description = "Environment for resource tagging (e.g., dev, prod)"
+  default     = "dev"
+}
