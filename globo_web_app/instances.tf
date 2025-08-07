@@ -14,7 +14,7 @@ resource "aws_instance" "nginx" {
   count                  = var.instances_count
   ami                    = nonsensitive(data.aws_ssm_parameter.amzn2_linux.value)
   instance_type          = var.instance_type
-  subnet_id              = aws_subnet.public_subnets[(count.index % var.vpc_public_subnet_count)].id
+  subnet_id              = module.app.public_subnets[(count.index % var.vpc_public_subnet_count)].id
   vpc_security_group_ids = [aws_security_group.nginx_sg.id]
   iam_instance_profile   = aws_iam_instance_profile.nginx_profile.name # attach IAM role to instance
   depends_on             = [aws_iam_role_policy.allow_s3_all]          # ensure IAM role policy is created before instance

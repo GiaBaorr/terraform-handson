@@ -9,9 +9,9 @@ resource "aws_lb" "nginx" {
   name               = "globo-web-alb"
   internal           = false # public facing ALB
   load_balancer_type = "application"
-  security_groups    = [aws_security_group.alb_sg.id]                               # security group for ALB
-  subnets            = aws_subnet.public_subnets[*].id # public subnets
-  depends_on         = [aws_s3_bucket_policy.web_bucket]                            # ensure S3 bucket policy is created before ALB
+  security_groups    = [aws_security_group.alb_sg.id]    # security group for ALB
+  subnets            = module.app.public_subnets         # public subnets
+  depends_on         = [aws_s3_bucket_policy.web_bucket] # ensure S3 bucket policy is created before ALB
 
   enable_deletion_protection = false # allow deletion of ALB after terraform destroy
 
@@ -30,7 +30,7 @@ resource "aws_lb_target_group" "nginx" {
   name     = "nginx-alb-tg"
   port     = 80
   protocol = "HTTP"
-  vpc_id   = aws_vpc.app.id
+  vpc_id   = module.app.vpc_id
 
   tags = local.common_tags
 }
