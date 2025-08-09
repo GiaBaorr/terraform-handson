@@ -9,15 +9,15 @@ resource "aws_lb" "nginx" {
   name               = "globo-web-alb"
   internal           = false # public facing ALB
   load_balancer_type = "application"
-  security_groups    = [aws_security_group.alb_sg.id]    # security group for ALB
-  subnets            = module.app.public_subnets         # public subnets
-  depends_on         = [aws_s3_bucket_policy.web_bucket] # ensure S3 bucket policy is created before ALB
+  security_groups    = [aws_security_group.alb_sg.id] # security group for ALB
+  subnets            = module.app.public_subnets      # public subnets
+  depends_on         = [module.web_app_s3]            # ensure S3 bucket policy is created before ALB
 
   enable_deletion_protection = false # allow deletion of ALB after terraform destroy
 
   # enable access logs for the ALB
   access_logs {
-    bucket  = aws_s3_bucket.web_bucket.bucket
+    bucket  = module.web_app_s3.web_bucket.id
     enabled = true
     prefix  = "alb-logs" # prefix for the logs in the S3 bucket
   }

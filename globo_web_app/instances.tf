@@ -16,68 +16,13 @@ resource "aws_instance" "nginx" {
   instance_type          = var.instance_type
   subnet_id              = module.app.public_subnets[(count.index % var.vpc_public_subnet_count)].id
   vpc_security_group_ids = [aws_security_group.nginx_sg.id]
-  iam_instance_profile   = aws_iam_instance_profile.nginx_profile.name # attach IAM role to instance
-  depends_on             = [aws_iam_role_policy.allow_s3_all]          # ensure IAM role policy is created before instance
+  iam_instance_profile   = module.web_app_s3.instance_profile.name # attach IAM role to instance
+  depends_on             = [module.web_app_s3]                     # ensure IAM role policy is created before instance
 
   user_data = templatefile("${path.module}/templates/startup_script.tpl", {
-    s3_bucket_name = aws_s3_bucket.web_bucket.id
+    s3_bucket_name = module.web_app_s3.web_bucket.id
   })
   # script run at first time instance up
   # define script by herodic syntax with <<EOF EOF
 
-}
-
-# aws_iam_role
-resource "aws_iam_role" "allow_nginx_s3" {
-  name = "allow_nginx_s3"
-
-  assume_role_policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Action": "sts:AssumeRole",
-      "Principal": {
-        "Service": "ec2.amazonaws.com"
-      },
-      "Effect": "Allow",
-      "Sid": ""
-    }
-  ]
-}
-EOF
-  tags               = local.common_tags
-}
-
-# aws_iam_instance_profile
-resource "aws_iam_instance_profile" "nginx_profile" {
-  name = "nginx_profile"
-  role = aws_iam_role.allow_nginx_s3.name
-
-  tags = local.common_tags
-}
-
-
-# aws_iam_role_policy
-resource "aws_iam_role_policy" "allow_s3_all" {
-  name = "allow_s3_all"
-  role = aws_iam_role.allow_nginx_s3.name
-
-  policy = <<EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Action": [
-        "s3:*"
-      ],
-      "Effect": "Allow",
-      "Resource": [
-        "arn:aws:s3:::${local.s3_bucket_name}",
-        "arn:aws:s3:::${local.s3_bucket_name}/*"
-      ]
-    }
-  ]
-}
-EOF
 }
